@@ -6,6 +6,10 @@ An Obsidian plugin that lets you fully style your PDF exports, and also export n
 
 Copy `main.js`, `manifest.json` and `styles.css` into `<your vault>/.obsidian/plugins/pdf-customiser/`, then enable **PDF Customiser** under *Settings → Community plugins*.
 
+## Install with BRAT (auto-updating)
+
+Install the BRAT plugin, run **BRAT: Add a beta plugin for testing**, and enter `mkdogs25/obsidian-exporter`. Every push to `main` that changes the plugin files publishes a new release automatically (see `.github/workflows/release.yml`), and BRAT picks it up.
+
 ## Using it
 
 Open the **⋯ menu** at the top of a note. It has three buttons:
