@@ -1,0 +1,9 @@
+{
+	"id": "pdf-customiser",
+	"name": "PDF Customiser",
+	"version": "1.0.0",
+	"minAppVersion": "1.5.0",
+	"description": "Fully customise the style of PDF exports — designs, per-heading colours and fonts, headers, footers, page numbers, watermarks and presets — and export notes to Word (.docx) and PowerPoint (.pptx).",
+	"author": "mkdogs25",
+	"isDesktopOnly": false
+}
