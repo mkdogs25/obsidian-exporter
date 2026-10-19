@@ -1,0 +1,474 @@
+/* PDF Customiser — settings UI, preview and export-dialog styles.
+ * (The PDF styling itself is generated at runtime from your settings.) */
+
+/* ── Header & tab bar ───────────────────────────────────────────── */
+
+.pdfc-settings .pdfc-hero {
+	margin-bottom: var(--size-4-3);
+}
+
+.pdfc-hero-title {
+	font-size: var(--font-ui-larger);
+	font-weight: var(--font-bold);
+}
+
+.pdfc-hero-sub {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.pdfc-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-1);
+	padding-bottom: var(--size-4-2);
+	margin-bottom: var(--size-4-4);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.pdfc-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	padding: var(--size-4-1) var(--size-4-3);
+	border-radius: var(--radius-m);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	cursor: pointer;
+}
+
+.pdfc-tab:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.pdfc-tab.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.pdfc-tab-icon {
+	display: inline-flex;
+}
+
+.pdfc-tab-icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+/* ── Two-column layout with sticky preview ─────────────────────── */
+
+.pdfc-split {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 280px;
+	gap: var(--size-4-6);
+	align-items: start;
+}
+
+.pdfc-split-side {
+	position: sticky;
+	top: 0;
+}
+
+@media (max-width: 900px) {
+	.pdfc-split {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.pdfc-split-side {
+		position: static;
+		order: -1;
+		max-width: 320px;
+	}
+}
+
+.pdfc-note {
+	padding: var(--size-4-2) var(--size-4-3);
+	margin-bottom: var(--size-4-3);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.pdfc-muted {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.pdfc-slider-value {
+	min-width: 3.5em;
+	text-align: right;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-variant-numeric: tabular-nums;
+}
+
+.pdfc-font-input {
+	width: 220px;
+}
+
+.pdfc-code-input {
+	width: 100%;
+	min-height: 6em;
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small);
+}
+
+.pdfc-css-setting .setting-item-info {
+	display: none;
+}
+
+.pdfc-css-setting .setting-item-control {
+	flex: 1;
+}
+
+/* ── Collapsible heading panels ────────────────────────────────── */
+
+.pdfc-collapsible {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	margin-bottom: var(--size-4-2);
+	background: var(--background-primary);
+}
+
+.pdfc-collapsible > summary {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--size-4-2);
+	padding: var(--size-4-2) var(--size-4-3);
+	cursor: pointer;
+	list-style: none;
+}
+
+.pdfc-collapsible > summary::-webkit-details-marker {
+	display: none;
+}
+
+.pdfc-collapsible > summary::before {
+	content: "›";
+	color: var(--text-faint);
+	transition: transform 120ms ease;
+}
+
+.pdfc-collapsible[open] > summary::before {
+	transform: rotate(90deg);
+}
+
+.pdfc-summary-label {
+	flex: 1;
+	font-size: 1.1em;
+}
+
+.pdfc-summary-meta {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.pdfc-collapsible-body {
+	padding: 0 var(--size-4-3) var(--size-4-2);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+/* ── Design gallery ────────────────────────────────────────────── */
+
+.pdfc-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-1);
+	margin-bottom: var(--size-4-3);
+}
+
+.pdfc-chip {
+	padding: 2px var(--size-4-3);
+	border-radius: 999px;
+	font-size: var(--font-ui-smaller);
+	background: var(--background-secondary);
+	box-shadow: none;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.pdfc-chip.is-active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.pdfc-gallery {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+	gap: var(--size-4-3);
+	margin-bottom: var(--size-4-4);
+}
+
+.pdfc-card {
+	border-radius: var(--radius-m);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	overflow: hidden;
+	cursor: pointer;
+	transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.pdfc-card:hover,
+.pdfc-card:focus-visible {
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-s);
+	border-color: var(--interactive-accent);
+	outline: none;
+}
+
+.pdfc-card.is-active {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+.pdfc-thumb {
+	position: relative;
+	aspect-ratio: 3 / 3.4;
+	padding: 12px 12px 10px;
+	overflow: hidden;
+	border-bottom: 1px solid var(--background-modifier-border);
+	font-size: 6px;
+	line-height: 1.3;
+}
+
+.pdfc-thumb-frame {
+	position: absolute;
+	inset: 5px;
+	pointer-events: none;
+}
+
+.pdfc-thumb-h1 {
+	font-size: 13px;
+	line-height: 1.2;
+	margin-bottom: 5px;
+	white-space: nowrap;
+}
+
+.pdfc-thumb-h2 {
+	font-size: 8.5px;
+	line-height: 1.2;
+	margin: 6px 0 4px;
+	white-space: nowrap;
+}
+
+.pdfc-thumb-line {
+	height: 3px;
+	border-radius: 2px;
+	margin-bottom: 3px;
+	opacity: 0.28;
+}
+
+.pdfc-thumb-quote {
+	margin: 5px 0;
+	padding: 3px 4px;
+}
+
+.pdfc-thumb-quote .pdfc-thumb-line {
+	width: 80%;
+	margin: 0;
+}
+
+.pdfc-thumb-table {
+	border: 1px solid;
+	border-radius: 2px;
+	overflow: hidden;
+}
+
+.pdfc-thumb-th {
+	height: 5px;
+}
+
+.pdfc-thumb-tr {
+	height: 5px;
+	border-top: 1px solid;
+}
+
+.pdfc-card-meta {
+	padding: var(--size-4-1) var(--size-4-2) var(--size-4-2);
+}
+
+.pdfc-card-name {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+}
+
+.pdfc-card-desc {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.3;
+}
+
+.pdfc-badge {
+	padding: 0 6px;
+	border-radius: 999px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-size: 10px;
+	font-weight: var(--font-normal);
+}
+
+/* ── Live preview ──────────────────────────────────────────────── */
+
+.pdfc-preview-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: var(--size-4-1);
+}
+
+.pdfc-preview-label {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.pdfc-preview-viewport {
+	position: relative;
+	width: 100%;
+	overflow: hidden;
+	border-radius: var(--radius-s);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.pdfc-preview-page {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 794px;
+	height: 1123px;
+	box-sizing: border-box;
+	overflow: hidden;
+	transform-origin: top left;
+	user-select: none;
+}
+
+.pdfc-preview-content {
+	position: relative;
+	height: 100%;
+	overflow: hidden;
+	padding: 0 !important;
+}
+
+.pdfc-preview-content > :first-child {
+	margin-top: 0 !important;
+}
+
+.pdfc-pv-band {
+	position: absolute;
+	display: flex;
+	align-items: flex-end;
+	z-index: 2;
+}
+
+.pdfc-pv-band.is-header {
+	top: 0;
+}
+
+.pdfc-pv-band.is-footer {
+	bottom: 0;
+	align-items: flex-start;
+}
+
+.pdfc-pv-band-inner {
+	display: grid;
+	grid-template-columns: 1fr auto 1fr;
+	gap: 8px;
+	width: 100%;
+}
+
+.pdfc-pv-band.is-header .pdfc-pv-band-inner {
+	padding-bottom: 3.5mm;
+	margin-bottom: 0;
+}
+
+.pdfc-pv-band.is-footer .pdfc-pv-band-inner {
+	padding-top: 3.5mm;
+}
+
+.pdfc-pv-cell.is-center {
+	text-align: center;
+}
+
+.pdfc-pv-cell.is-right {
+	text-align: right;
+}
+
+.pdfc-pv-frame,
+.pdfc-pv-watermark {
+	position: absolute;
+	pointer-events: none;
+	z-index: 3;
+}
+
+.pdfc-pv-watermark {
+	overflow: hidden;
+}
+
+.pdfc-preview-modal {
+	width: min(900px, 92vw);
+}
+
+.pdfc-preview.is-large .pdfc-preview-viewport {
+	margin-top: var(--size-4-2);
+}
+
+/* ── Tokens ────────────────────────────────────────────────────── */
+
+.pdfc-tokens {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-1);
+	margin-bottom: var(--size-4-4);
+}
+
+.pdfc-token {
+	padding: 2px 8px;
+	border-radius: var(--radius-s);
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+	background: var(--background-secondary);
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.pdfc-token:hover {
+	background: var(--background-modifier-hover);
+}
+
+/* ── Section inside Obsidian's "Export to PDF" dialog ──────────── */
+
+.pdfc-native {
+	margin: var(--size-4-3) 0;
+	padding: var(--size-4-1) var(--size-4-3) var(--size-4-2);
+	border: 1px solid var(--background-modifier-border);
+	border-left: 3px solid var(--interactive-accent);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.pdfc-native .setting-item {
+	padding: var(--size-4-2) 0;
+}
+
+.pdfc-native-tip {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	padding: var(--size-4-1) 0;
+}
+
+/* Never let the settings UI show up in a printout. */
+@media print {
+	.pdfc-native,
+	.pdfc-preview {
+		display: none !important;
+	}
+}

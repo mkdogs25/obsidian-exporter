@@ -1,0 +1,51 @@
+name: Release
+
+# Publishes a GitHub release (which BRAT installs from) whenever the plugin
+# files change on main. The patch version is bumped automatically.
+on:
+  push:
+    branches: [main, claude/upbeat-allen-lrkcz5]
+    paths: [main.js, styles.css, manifest.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Work out the next version
+        id: version
+        run: |
+          latest=$(git tag --list --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
+          if [ -z "$latest" ]; then
+            next=$(jq -r .version manifest.json)
+          else
+            IFS=. read -r major minor patch <<< "$latest"
+            next="$major.$minor.$((patch + 1))"
+          fi
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Write the version into manifest.json
+        run: |
+          jq --tab --arg v "${{ steps.version.outputs.next }}" '.version = $v' manifest.json > manifest.tmp
+          mv manifest.tmp manifest.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git diff --cached --quiet || git commit -m "Release ${{ steps.version.outputs.next }} [skip ci]"
+          git push
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.next }}" main.js manifest.json styles.css \
+            --target "$(git rev-parse HEAD)" \
+            --title "${{ steps.version.outputs.next }}" \
+            --generate-notes
