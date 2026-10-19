@@ -8,7 +8,7 @@ Copy `main.js`, `manifest.json` and `styles.css` into `<your vault>/.obsidian/pl
 
 ## Install with BRAT (auto-updating)
 
-Install the BRAT plugin, run **BRAT: Add a beta plugin for testing**, and enter `mkdogs25/obsidian-exporter`. Every push to `main` that changes the plugin files publishes a new release automatically (see `.github/workflows/release.yml`), and BRAT picks it up.
+Install the BRAT plugin, run **BRAT: Add a beta plugin for testing**, and enter `mkdogs25/obsidian-exporter`. Every push to the default branch that changes the plugin files publishes a new release automatically (see `.github/workflows/release.yml`), and BRAT picks it up.
 
 ## Using it
 

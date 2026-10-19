@@ -4,7 +4,7 @@ name: Release
 # files change on main. The patch version is bumped automatically.
 on:
   push:
-    branches: [main]
+    branches: [main, claude/upbeat-allen-lrkcz5]
     paths: [main.js, styles.css, manifest.json]
   workflow_dispatch:
 
