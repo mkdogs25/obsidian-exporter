@@ -26,7 +26,7 @@ The settings are split into tabs. Most tabs include a live A4 preview, which you
 
 | Tab | What's inside |
 | --- | --- |
-| General | Turn the style on or off, choose which menu buttons appear, set where files are saved and their names, default author, date format, and embedded notes |
+| General | Turn the style on or off, override your Obsidian theme completely (on by default), choose which menu buttons appear, set where files are saved and their names, default author, date format, and embedded notes |
 | Designs | A gallery of 12 designs with category filters and undo, plus fine-tuning for heading decoration, quotes, tables, images, page border, accent bar, background pattern, drop cap, link underline and corner roundness |
 | Colours | Separate colours for H1–H6, body text, background, links, highlights, quotes, code, tables, rules and the header/footer, plus "generate palette from accent" |
 | Typography | Separate font, size, weight, colour, italic, uppercase, letter spacing and alignment for each heading level; body and code fonts; quick tools to use one font for all headings and to set heading sizes on a scale |

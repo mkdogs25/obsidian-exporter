@@ -336,6 +336,7 @@ const getTemplate = (id) => TEMPLATES.find((t) => t.id === id);
 
 const DEFAULT_SETTINGS = {
 	enabled: true,
+	overrideTheme: true,
 	activeTemplate: 'minimal',
 	templateModified: false,
 	menu: { pdf: true, docx: true, pptx: true, fileExplorer: false },
@@ -455,6 +456,82 @@ function headingDecoration(style, level, c, d) {
 	}
 }
 
+/** Split a declaration block on ';' while respecting quotes and parentheses (e.g. url(data:...;base64,...)). */
+function splitDecls(body) {
+	const out = [];
+	let cur = '';
+	let depth = 0;
+	let quote = '';
+	for (const ch of String(body)) {
+		if (quote) { if (ch === quote) quote = ''; } else if (ch === '"' || ch === "'") quote = ch;
+		else if (ch === '(') depth++;
+		else if (ch === ')') depth = Math.max(0, depth - 1);
+		if (ch === ';' && !quote && !depth) { out.push(cur); cur = ''; } else cur += ch;
+	}
+	out.push(cur);
+	return out.map((x) => x.trim()).filter(Boolean);
+}
+
+function makeImportant(body) {
+	return splitDecls(body).map((d) => (/!important\s*$/i.test(d) ? d : `${d} !important`)).join('; ') + ';';
+}
+
+/** Scope user CSS under `R` (plain selectors, @media blocks, or bare declarations). */
+function scopeCss(css, R, important) {
+	const src = String(css || '').replace(/\/\*[\s\S]*?\*\//g, '');
+	const decls = (b) => (important ? makeImportant(b) : b);
+	if (!src.includes('{')) return src.trim() ? `${R} { ${decls(src)} }` : '';
+	let out = '';
+	let i = 0;
+	while (i < src.length) {
+		const open = src.indexOf('{', i);
+		if (open < 0) break;
+		const prelude = src.slice(i, open).trim().replace(/^[^{}]*;\s*(?=@)/, '');
+		let depth = 1;
+		let j = open + 1;
+		while (j < src.length && depth) { if (src[j] === '{') depth++; else if (src[j] === '}') depth--; j++; }
+		const body = src.slice(open + 1, j - 1);
+		i = j;
+		if (prelude.startsWith('@')) {
+			out += /^@(media|supports|layer|container)/i.test(prelude) ? `${prelude} { ${scopeCss(body, R, important)} }\n` : `${prelude} { ${body} }\n`;
+		} else if (prelude) {
+			const sel = prelude.split(',').map((x) => x.trim()).filter(Boolean).map((x) => (/^(html|body|:root)$/i.test(x) ? R : `${R} ${x}`)).join(', ');
+			out += `${sel} { ${decls(body)} }\n`;
+		}
+	}
+	return out;
+}
+
+/** CSS custom properties that redefine Obsidian's theme variables from the user's design. */
+function themeVars(s) {
+	const c = s.colours;
+	const t = s.typography;
+	const bodyFont = cssFont(t.body.font, 'sans-serif');
+	const codeFont = cssFont(t.code.font, 'monospace');
+	const v = [
+		`--text-normal: ${c.text}`, `--text-muted: ${mix(c.text, c.background, 0.35)}`, `--text-faint: ${mix(c.text, c.background, 0.55)}`,
+		`--text-accent: ${c.accent}`, `--text-on-accent: ${contrastText(c.accent)}`, `--interactive-accent: ${c.accent}`, `--color-accent: ${c.accent}`,
+		`--background-primary: ${c.background}`, `--background-primary-alt: ${c.codeBg}`, `--background-secondary: ${c.codeBg}`, `--background-secondary-alt: ${c.codeBg}`,
+		`--background-modifier-border: ${c.tableBorder}`,
+		`--link-color: ${c.link}`, `--link-external-color: ${c.link}`, `--link-unresolved-color: ${c.link}`,
+		`--link-decoration: ${s.design.linkUnderline ? 'underline' : 'none'}`, `--link-external-decoration: ${s.design.linkUnderline ? 'underline' : 'none'}`,
+		`--font-text: ${bodyFont}`, `--font-interface: ${bodyFont}`, `--font-monospace: ${codeFont}`,
+		`--font-text-size: ${t.body.size}pt`, `--line-height-normal: ${t.body.lineHeight}`,
+		`--bold-color: ${c.text}`, `--italic-color: ${c.text}`, `--bold-weight: 700`,
+		`--text-highlight-bg: ${c.highlight}`, `--hr-color: ${c.hr}`, `--hr-thickness: 1px`,
+		`--list-marker-color: ${s.design.listMarkerAccent ? c.accent : c.text}`,
+		`--blockquote-border-color: ${c.blockquoteBorder}`, `--blockquote-color: ${c.blockquoteText}`, `--blockquote-background-color: ${c.blockquoteBg}`,
+		`--code-background: ${c.codeBg}`, `--code-normal: ${c.codeText}`,
+		`--table-border-color: ${c.tableBorder}`, `--table-header-background: ${c.tableHeaderBg}`, `--table-header-color: ${c.tableHeaderText}`,
+		`--checkbox-color: ${c.accent}`,
+	];
+	for (let n = 1; n <= 6; n++) {
+		const h = t.headings['h' + n];
+		v.push(`--h${n}-color: ${c['h' + n]}`, `--h${n}-font: ${cssFont(h.font, bodyFont)}`, `--h${n}-size: ${h.size}pt`, `--h${n}-weight: ${h.weight}`);
+	}
+	return v;
+}
+
 /** Styles for the rendered note itself, scoped under `R`. */
 function buildContentCss(s, R) {
 	const c = s.colours;
@@ -463,21 +540,36 @@ function buildContentCss(s, R) {
 	const p = s.page;
 	const bodyFont = cssFont(t.body.font, 'sans-serif');
 	const codeFont = cssFont(t.code.font, 'monospace');
+	const ov = !!s.overrideTheme;
 	const L = [];
-	const rule = (sel, body) => L.push(`${sel.split(',').map((x) => `${R} ${x.trim()}`).join(', ')} { ${body} }`);
+	const rule = (sel, body) => L.push(`${sel.split(',').map((x) => `${R} ${x.trim()}`).join(', ')} { ${ov ? makeImportant(body) : body} }`);
 
-	const vars = [
-		`--text-normal: ${c.text}`, `--background-primary: ${c.background}`, `--link-color: ${c.link}`, `--link-external-color: ${c.link}`,
-		`--text-accent: ${c.accent}`, `--blockquote-border-color: ${c.blockquoteBorder}`, `--code-background: ${c.codeBg}`, `--code-normal: ${c.codeText}`,
-		`--font-text: ${bodyFont}`, `--font-monospace: ${codeFont}`, `--text-highlight-bg: ${c.highlight}`, `--hr-color: ${c.hr}`,
-		`--table-border-color: ${c.tableBorder}`, `--table-header-background: ${c.tableHeaderBg}`,
-	];
-	for (let n = 1; n <= 6; n++) {
-		const h = t.headings['h' + n];
-		vars.push(`--h${n}-color: ${c['h' + n]}`, `--h${n}-font: ${cssFont(h.font, bodyFont)}`, `--h${n}-size: ${h.size}pt`, `--h${n}-weight: ${h.weight}`);
-	}
-	L.push(`${R} { ${vars.join('; ')}; color: ${c.text} !important; background-color: ${c.background} !important; font-family: ${bodyFont} !important; font-size: ${t.body.size}pt !important; font-weight: ${t.body.weight}; line-height: ${t.body.lineHeight} !important; }`);
+	const rootBody = `${themeVars(s).join('; ')}; color: ${c.text} !important; background-color: ${c.background} !important; font-family: ${bodyFont} !important; font-size: ${t.body.size}pt !important; font-weight: ${t.body.weight}; line-height: ${t.body.lineHeight} !important;`;
+	L.push(`${R} { ${ov ? makeImportant(rootBody) : rootBody} }`);
 	if (d.pageBorder !== 'none' || d.accentBar === 'left') L.push(`${R} { padding-left: 6mm !important; padding-right: 6mm !important; }`);
+
+	if (ov) {
+		// Wipe whatever the Obsidian theme or CSS snippets did, so only the rules below apply.
+		const heads = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+		rule(heads.join(', '), 'border: 0 none; background: none; box-shadow: none; padding: 0; text-decoration: none; font-variant: normal; float: none; filter: none; opacity: 1;');
+		rule([...heads.map((h) => `${h}::before`), ...heads.map((h) => `${h}::after`), 'blockquote::before', 'blockquote::after'].join(', '), 'content: none; display: none;');
+		rule('.heading-collapse-indicator, .collapse-indicator, .copy-code-button, .edit-block-button', 'display: none;');
+		rule('p, li, span, a, strong, b, em, i, td, th, blockquote, h1, h2, h3, h4, h5, h6', 'text-shadow: none; -webkit-text-stroke: 0;');
+		rule('strong, b, em, i', 'color: inherit; background: none;');
+		rule('a', 'background: none; border: 0; box-shadow: none; font-weight: inherit;');
+		rule('blockquote', 'border: 0 none; background: none; box-shadow: none; padding: 0;');
+		rule('code, pre', 'border: 0 none; background: none; box-shadow: none; padding: 0; text-shadow: none; font-weight: 400; font-style: normal;');
+		rule('pre code span, pre code [class*="cm-"], pre code .token', 'color: inherit; background: none;');
+		rule('table, thead, tbody, tr, th, td', 'border: 0 none; background: none; box-shadow: none; text-transform: none; font-variant: normal;');
+		rule('hr', 'height: auto; background: none; box-shadow: none;');
+		rule('img', 'border: 0; outline: none; filter: none; opacity: 1; box-shadow: none; border-radius: 0;');
+		rule('ul, ol', 'list-style-image: none;');
+		rule('input[type="checkbox"], .task-list-item-checkbox', `accent-color: ${c.accent};`);
+		rule('.callout', `background: ${c.blockquoteBg}; border: 0 none; border-left: 4px solid ${c.blockquoteBorder}; border-radius: ${d.radius}px; mix-blend-mode: normal; box-shadow: none; padding: .7em 1em; margin: 1em 0; color: ${c.blockquoteText};`);
+		rule('.callout-title, .callout-title-inner, .callout-icon', `color: ${c.accent}; font-family: ${bodyFont}; font-weight: 700;`);
+		rule('.callout-content', 'background: none; padding: 0; border: 0;');
+		rule('.callout p', `color: ${c.blockquoteText}; margin: 0 0 .4em 0;`);
+	}
 
 	rule('p, li, dd, dt, td, th', `font-family: ${bodyFont}; line-height: ${t.body.lineHeight};`);
 	rule('p, li, td, dd', `color: ${c.text} !important; font-size: ${t.body.size}pt !important;`);
@@ -618,11 +710,18 @@ function buildPrintCss(s, ctx) {
 	out.push(`html, body { background-color: ${c.background} !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }`);
 	const pattern = backgroundPatternCss(s);
 	if (pattern) out.push(`html { ${pattern} }`);
-	out.push(buildContentCss(s, 'body .markdown-rendered'));
+	const R = s.overrideTheme ? 'body:not(#pdfc) .markdown-rendered' : 'body .markdown-rendered';
+	if (s.overrideTheme) {
+		// Redefine the theme's variables everywhere, in light and dark mode, with ID-level specificity.
+		const dark = luminance(c.background) < 0.3;
+		const sel = ['body:not(#pdfc)', 'body.theme-dark:not(#pdfc)', 'body.theme-light:not(#pdfc)', 'body:not(#pdfc) .print', 'body:not(#pdfc) .print .markdown-preview-view', 'body:not(#pdfc) .print .markdown-preview-sizer'].join(', ');
+		out.push(`${sel} { ${makeImportant(`${themeVars(s).join('; ')}; color-scheme: ${dark ? 'dark' : 'light'}; color: ${c.text}; background-color: ${c.background}`)} }`);
+	}
+	out.push(buildContentCss(s, R));
 	const frame = pageFrameCss(s);
 	if (frame) out.push(`body::after { content: ""; position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 9998; ${frame} }`);
 	if (s.watermark.enabled && s.watermark.text) out.push(`body::before { position: fixed; top: 50%; left: 50%; z-index: 9999; ${watermarkCss(s)} }`);
-	if (s.customCss && s.customCss.trim()) out.push(`body .markdown-rendered { ${s.customCss} }`);
+	if (s.customCss && s.customCss.trim()) out.push(scopeCss(s.customCss, R, true));
 	out.push('}');
 
 	const slots = computeSlots(s);
@@ -2076,7 +2175,7 @@ class LivePreview {
 			el.style.right = `${m.right * MM_PX}px`;
 		}
 		let css = buildContentCss(s, `${P} .pdfc-preview-content`) + '\n' + buildPreviewPageCss(s, P);
-		if (s.customCss && s.customCss.trim()) css += `\n${P} .pdfc-preview-content { ${s.customCss} }`;
+		if (s.customCss && s.customCss.trim()) css += '\n' + scopeCss(s.customCss, `${P} .pdfc-preview-content`, true);
 		this.styleEl.textContent = css;
 
 		const slots = computeSlots(s).normal;
@@ -2338,6 +2437,7 @@ class PdfCustomiserSettingTab extends PluginSettingTab {
 	render_general(el) {
 		this.heading(el, 'PDF export', 'PDF Customiser styles Obsidian’s built-in “Export to PDF”. A “PDF Customiser” section is also added to that dialog so you can switch designs quickly.');
 		this.toggle(el, 'Apply custom style to PDF exports', 'enabled', 'Turn off to export PDFs with your normal Obsidian theme.', { style: false });
+		this.toggle(el, 'Override my Obsidian theme completely', 'overrideTheme', 'Resets theme and CSS-snippet styling (headings, links, quotes, code, tables, callouts, images) so only your PDF design shows. Turn off to let your theme show through wherever you haven’t set a style.', { style: false });
 
 		this.heading(el, 'Note menu', 'Choose which export buttons appear in the ⋯ menu at the top of a note.');
 		this.toggle(el, 'Export to PDF', 'menu.pdf', null, { style: false });
@@ -3142,6 +3242,6 @@ module.exports = PdfCustomiserPlugin;
 module.exports.default = PdfCustomiserPlugin;
 // Exposed for testing; not used by Obsidian.
 module.exports.internals = {
-	DEFAULT_SETTINGS, TEMPLATES, parseMarkdown, parseInline, splitSlides, buildPrintCss, buildContentCss,
+	scopeCss, makeImportant, themeVars, DEFAULT_SETTINGS, TEMPLATES, parseMarkdown, parseInline, splitSlides, buildPrintCss, buildContentCss,
 	computeSlots, expandTokens, DocxBuilder, PptxBuilder, createZip, imageInfo, deepMerge, clone, SAMPLE_HTML, SAMPLE_CTX,
 };
